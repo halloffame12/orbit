@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build app (main + preload + renderer)
+        run: npm run build
+
       - name: Generate icons
         run: npm run icon
         shell: powershell
