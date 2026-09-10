@@ -1,0 +1,44 @@
+{
+  "name": "Alex Rivera",
+  "targetRole": "Senior Full-Stack Engineer (React + Node)",
+  "currentCompany": "Nimbus Health (Series B, 180 employees)",
+  "yearsExperience": 7,
+  "resumeSummary": "Full-stack engineer specializing in React/TypeScript frontends and Node.js microservices. Led migration of monolith to event-driven architecture serving 2M MAU. Strong grasp of distributed systems, observability, and performance optimization. Previous roles at two startups and one FAANG-adjacent fintech.",
+  "technicalStrengths": [
+    "React / TypeScript / Next.js",
+    "Node.js / Fastify / Koa",
+    "PostgreSQL / Redis / Kafka",
+    "AWS (Lambda, DynamoDB, SQS)",
+    "System design & distributed systems",
+    "Performance profiling (CLS/LCP)",
+    "Terraform / IaC",
+    "GraphQL / tRPC"
+  ],
+  "stories": [
+    {
+      "title": "Monolith → Event-Driven Migration",
+      "situation": "Checkout service monolith crashed weekly at peak load; 30% error rate during sales.",
+      "task": "Architect and lead migration to event-driven microservices without downtime.",
+      "action": "Decomposed checkout into 6 services, event-sourced order state with Kafka, added idempotency keys and an outbox pattern.",
+      "result": "Zero-downtime cutover; 99.99% uptime; peak throughput 4,200 req/s.",
+      "metric": "Removed 62% of p95 latency; error rate 30% → 0.1%"
+    },
+    {
+      "title": "LCP Optimization Project",
+      "situation": "Marketing site had 4.8s LCP hurting conversions and SEO.",
+      "task": "Get LCP under 2.0s across core pages.",
+      "action": "Implemented streaming SSR, code-split route bundles, and image CDN with AVIF; moved blocking scripts to workers.",
+      "result": "LCP 4.8s → 1.6s; organic traffic +38% in 60 days.",
+      "metric": "+38% organic traffic, 4.8s → 1.6s LCP"
+    },
+    {
+      "title": "Real-time Analytics Pipeline",
+      "situation": "Product dashboards were 24h stale; leadership needed live decision support.",
+      "task": "Build a 5-minute-latency event pipeline at scale.",
+      "action": "Designed Lambda + Kinesis → S3 → Athena + Materialize; added exactly-once dedup and schema evolution.",
+      "result": "Live dashboards for 40+ teams; pipeline cost $180/mo for 85M events/day.",
+      "metric": "85M events/day for $180/mo at near-real-time latency"
+    }
+  ],
+  "weaknesses": "Tendency to over-engineer early; working on scoping to MVP first. Strengthening async communication with non-technical stakeholders."
+}
