@@ -155,6 +155,10 @@ export function useCopilot() {
     []
   );
 
+  const quitApp = useCallback(() => {
+    api.quit();
+  }, []);
+
   const setOverlayOpacity = useCallback((opacity: number) => {
     api.setOpacity(opacity);
     updateConfig({ overlay: { ...(configRef.current?.overlay as any), opacity } });
@@ -186,6 +190,7 @@ export function useCopilot() {
     captureAndSolve,
     clearAll,
     testConnection,
+    quitApp,
     setOverlayOpacity,
   };
 }

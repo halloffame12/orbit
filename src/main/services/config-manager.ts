@@ -29,6 +29,7 @@ export interface AppConfig {
     snip: string;
     clearContext: string;
     openSettings: string;
+    quit: string;
   };
 }
 
@@ -56,6 +57,7 @@ const DEFAULT_CONFIG: AppConfig = {
     snip: "CommandOrControl+Shift+S",
     clearContext: "CommandOrControl+Shift+X",
     openSettings: "CommandOrControl+Shift+O",
+    quit: "CommandOrControl+Shift+Q",
   },
 };
 

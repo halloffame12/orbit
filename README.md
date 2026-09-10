@@ -135,6 +135,7 @@ STT/LLM/overlay defaults:
 | `Ctrl/⌘ + Shift + S`     | Capture screen & solve (live coding mode)  |
 | `Ctrl/⌘ + Shift + X`     | Clear context / abort the current stream   |
 | `Ctrl/⌘ + Shift + O`     | Open settings                              |
+| `Ctrl/⌘ + Shift + Q`     | Quit Orbit (also via tray → Quit)          |
 
 Hotkeys are registered as OS-level `globalShortcut`s, so they work even when
 the overlay is click-through or unfocused.

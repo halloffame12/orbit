@@ -30,6 +30,7 @@ export default function App() {
     clearAll,
     clickthrough,
     toggleClickthrough,
+    quitApp,
   } = useCopilot();
 
   if (!config) return null;
@@ -129,6 +130,15 @@ export default function App() {
                 title="Clear context (Ctrl+Shift+X)"
               >
                 ✕
+              </button>
+
+              {/* Quit */}
+              <button
+                onClick={quitApp}
+                className="px-1.5 py-0.5 rounded border border-white/10 text-copilot-dim hover:text-red-400 hover:border-red-400/60"
+                title="Quit Orbit (Ctrl+Shift+Q)"
+              >
+                ⏻
               </button>
             </div>
 

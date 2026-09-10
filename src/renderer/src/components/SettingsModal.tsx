@@ -220,6 +220,28 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
             )}
           </div>
         </section>
+        {/* Shortcuts */}
+        <section>
+          <span className={LABEL}>Keyboard shortcuts</span>
+          <div className="rounded-md border border-white/10 bg-black/20 divide-y divide-white/5">
+            {[
+              ["Show / hide overlay", config.hotkeys.toggleVisibility],
+              ["Force generate", config.hotkeys.forceGenerate],
+              ["Capture & solve", config.hotkeys.snip],
+              ["Toggle click-through", config.hotkeys.toggleClickthrough],
+              ["Clear context", config.hotkeys.clearContext],
+              ["Open this settings panel", config.hotkeys.openSettings],
+              ["Quit Orbit", config.hotkeys.quit],
+            ].map(([label, hotkey]) => (
+              <div key={hotkey} className="flex items-center justify-between px-3 py-1.5">
+                <span className="text-[11px] text-copilot-dim">{label}</span>
+                <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-copilot-accent">
+                  {hotkey.split("+").join(" + ").replace("CommandOrControl", "Ctrl")}
+                </kbd>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Footer */}

@@ -17,6 +17,7 @@ export interface OrbitAPI {
   startAudio(): Promise<void>;
   stopAudio(): Promise<void>;
   getDevices(): Promise<any[]>;
+  quit(): void;
   onTranscript(cb: (data: any) => void): void;
   onLLMToken(cb: (data: any) => void): void;
   onLLMComplete(cb: (data: any) => void): void;
@@ -46,6 +47,7 @@ const api: OrbitAPI = {
   startAudio: () => ipcRenderer.invoke("ipc:start-audio"),
   stopAudio: () => ipcRenderer.invoke("ipc:stop-audio"),
   getDevices: () => ipcRenderer.invoke("ipc:get-devices"),
+  quit: () => ipcRenderer.send("ipc:quit"),
   onTranscript: (cb) => {
     ipcRenderer.on("ipc:transcript", (_e, data) => cb(data));
   },

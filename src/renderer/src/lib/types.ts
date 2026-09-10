@@ -51,6 +51,7 @@ export interface AppConfig {
     snip: string;
     clearContext: string;
     openSettings: string;
+    quit: string;
   };
 }
 
@@ -93,6 +94,7 @@ export interface OrbitAPI {
   startAudio(): Promise<void>;
   stopAudio(): Promise<void>;
   getDevices(): Promise<unknown[]>;
+  quit(): void;
   onTranscript(cb: (data: TranscriptLine) => void): void;
   onLLMToken(cb: (data: LLMChunk) => void): void;
   onLLMComplete(cb: (data: LLMComplete) => void): void;

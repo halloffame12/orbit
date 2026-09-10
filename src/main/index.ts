@@ -149,6 +149,7 @@ function registerHotkeys(): void {
   globalShortcut.register(hotkeys.openSettings, () => {
     mainWindow?.webContents.send("ipc:open-settings");
   });
+  globalShortcut.register(hotkeys.quit, () => app.quit());
 }
 
 function toggleVisibility(): void {
@@ -247,6 +248,8 @@ function setupIPC(): void {
   });
 
   ipcMain.handle("ipc:capture-and-solve", () => captureAndSolve());
+
+  ipcMain.on("ipc:quit", () => app.quit());
 
   ipcMain.handle("ipc:test-connection", (_e, draftCfg: Partial<LLMConfig>) => {
     return llmService?.testConnection({ ...config.getLLMConfig(), ...draftCfg }) ?? { ok: false, latencyMs: 0, error: "LLM service not ready" };
