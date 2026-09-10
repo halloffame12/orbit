@@ -103,7 +103,8 @@
     "publish": {
       "provider": "github",
       "owner": "halloffame12",
-      "repo": "orbit"
+      "repo": "orbit",
+      "releaseType": "release"
     }
   }
 }
