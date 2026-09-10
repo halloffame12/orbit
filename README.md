@@ -78,6 +78,13 @@ a PowerShell P/Invoke — the behavior is identical. Verified at runtime:
 On macOS the equivalent is `NSWindow.sharingType = .none`, stubbed in the
 same wrapper for `setAlwaysOnTop`/full-screen-safe positioning.
 
+In a full-screen share, the excluded region renders as **solid black** — it can
+never appear, but it does cover whatever is behind it. Orbit ships **overlay
+placement presets** (Settings → Overlay placement) so you can park it over
+your own camera tile or an empty corner and keep all shared content visible.
+Sharing a single window instead of the whole screen hides the overlay with no
+black region at all.
+
 ---
 
 ## Getting started

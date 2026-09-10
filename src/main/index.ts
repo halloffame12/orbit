@@ -25,6 +25,38 @@ function centerX(): number {
   return Math.round(width / 2 - OVERLAY_W / 2);
 }
 
+/**
+ * Parks the overlay at the configured spot. During a full-screen share the
+ * excluded region shows as solid black, so presets let the user sit the
+ * overlay over their own camera tile — shared content stays fully visible.
+ */
+function positionOverlay(): void {
+  if (!mainWindow) return;
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const pad = 16;
+  let x = centerX();
+  let y = 40;
+
+  switch (config.getOverlayPosition()) {
+    case "top-right":
+      x = width - OVERLAY_W - pad;
+      y = pad;
+      break;
+    case "bottom-right":
+      x = width - OVERLAY_W - pad;
+      y = height - OVERLAY_H - pad;
+      break;
+    case "bottom-left":
+      x = pad;
+      y = height - OVERLAY_H - pad;
+      break;
+    case "top-center":
+    default:
+      break;
+  }
+  mainWindow.setPosition(x, y);
+}
+
 function createWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
     width: OVERLAY_W,
@@ -54,6 +86,7 @@ function createWindow(): BrowserWindow {
 
   const applied = applyScreenHiding(mainWindow);
   console.log(`[main] Screen hiding applied: ${applied}`);
+  positionOverlay();
 
   const devUrl = "http://localhost:5173";
 
@@ -174,7 +207,7 @@ function setInteractive(enabled: boolean): void {
     mainWindow.focus();
   } else {
     mainWindow.setSize(OVERLAY_W, OVERLAY_H, false);
-    mainWindow.setPosition(centerX(), 40);
+    positionOverlay();
   }
 }
 
@@ -208,6 +241,7 @@ function setupIPC(): void {
     config.setAll(data);
     llmService?.updateConfig(data.llm ? { ...config.getLLMConfig() } : config.getLLMConfig());
     registerHotkeys(); // hotkey changes take effect immediately
+    if (data.overlay?.position) positionOverlay(); // placement changes apply live
     return true;
   });
 

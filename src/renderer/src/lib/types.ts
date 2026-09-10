@@ -1,5 +1,6 @@
 export type ProviderId = "openai" | "gemini" | "claude" | "local";
 export type InterviewMode = "behavioral" | "coding";
+export type OverlayPosition = "top-center" | "top-right" | "bottom-right" | "bottom-left";
 
 export interface TranscriptLine {
   speaker: "Interviewer" | "Me";
@@ -43,6 +44,7 @@ export interface AppConfig {
     height: number;
     padding: number;
     fontSize: number;
+    position: OverlayPosition;
   };
   hotkeys: {
     toggleVisibility: string;

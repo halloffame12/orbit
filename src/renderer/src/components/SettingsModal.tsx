@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AppConfig, InterviewMode, LLMConfig, PROVIDER_META, ProviderId, ConnectionTest } from "@/lib/types";
+import { AppConfig, InterviewMode, LLMConfig, PROVIDER_META, ProviderId, ConnectionTest, OverlayPosition } from "@/lib/types";
 
 interface Props {
   config: AppConfig;
@@ -22,6 +22,8 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
   const [sttModel, setSttModel] = useState(config.stt.model);
   const [testing, setTesting] = useState<null | "running" | ConnectionTest>(null);
 
+  const [placement, setPlacement] = useState<OverlayPosition>(config.overlay.position);
+
   useEffect(() => {
     setModeLocal(config.mode);
   }, [config.mode]);
@@ -42,6 +44,7 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
     const patch: Partial<AppConfig> = {
       mode,
       llm,
+      overlay: { ...config.overlay, position: placement },
       stt: { ...config.stt, provider: sttProvider, apiKey: sttKey, whisperUrl, model: sttModel },
     };
     if (mode !== config.mode) onSetMode(mode);
@@ -220,6 +223,40 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
             )}
           </div>
         </section>
+        {/* Overlay placement */}
+        <section>
+          <span className={LABEL}>Overlay placement</span>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                ["top-center", "Top · Center"],
+                ["top-right", "Top · Right"],
+                ["bottom-right", "Bottom · Right"],
+                ["bottom-left", "Bottom · Left"],
+              ] as [OverlayPosition, string][]
+            ).map(([pos, label]) => (
+              <button
+                key={pos}
+                onClick={() => setPlacement(pos)}
+                className={`rounded-md py-2 text-[12px] font-medium border transition-colors ${
+                  placement === pos
+                    ? "border-copilot-accent bg-copilot-accent/10 text-copilot-accent"
+                    : "border-white/10 text-copilot-dim hover:border-white/25"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 rounded-md border border-copilot-accent/20 bg-copilot-accent/5 px-3 py-2 text-[11px] leading-relaxed text-copilot-dim">
+            <span className="text-copilot-accent font-semibold">Share-safe tip:</span> during a
+            full-screen share the overlay area renders as solid black (it can never be seen).
+            Park it over your <span className="text-copilot-text">own camera tile</span> or an
+            empty corner so shared content stays fully visible — bottom-right is the video tile
+            in most meeting apps. Sharing a single window hides the overlay entirely.
+          </div>
+        </section>
+
         {/* Shortcuts */}
         <section>
           <span className={LABEL}>Keyboard shortcuts</span>

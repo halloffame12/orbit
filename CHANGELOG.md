@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Quit hotkey (`Ctrl+Shift+Q`), a ⏻ quit button on the overlay HUD, and a
   shortcuts reference inside the Settings modal.
+- Overlay placement presets (top-center / top-right / bottom-right /
+  bottom-left) with a share-safe tip, so a full-screen share never covers
+  content you are presenting — park the overlay over your own camera tile.
 
 ## [1.0.0] - 2026-09-10
 

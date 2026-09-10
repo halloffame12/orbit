@@ -21,6 +21,7 @@ export interface AppConfig {
     height: number;
     padding: number;
     fontSize: number;
+    position: "top-center" | "top-right" | "bottom-right" | "bottom-left";
   };
   hotkeys: {
     toggleVisibility: string;
@@ -49,6 +50,7 @@ const DEFAULT_CONFIG: AppConfig = {
     height: 220,
     padding: 16,
     fontSize: 26,
+    position: "top-center",
   },
   hotkeys: {
     toggleVisibility: "CommandOrControl+Shift+H",
@@ -221,6 +223,10 @@ export class ConfigManager {
 
   getSTTConfig() {
     return this.config.stt;
+  }
+
+  getOverlayPosition() {
+    return this.config.overlay.position;
   }
 
   getLLMConfig(): LLMConfig {
