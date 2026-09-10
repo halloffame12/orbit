@@ -8,6 +8,14 @@
 > **Download:** [installer](https://github.com/halloffame12/orbit/releases/latest/download/Orbit.Setup.exe) ·
 > [portable](https://github.com/halloffame12/orbit/releases/latest/download/Orbit.Portable.exe)
 
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/halloffame12/orbit/main/website/public/og.png"
+    alt="Orbit - invisible real-time AI interview copilot"
+    width="720"
+  />
+</p>
+
 A real-time, low-latency interview copilot that runs invisibly during video calls (Zoom, Google Meet, Teams). It captures both your microphone and the system loopback audio, transcribes the conversation, detects when the interviewer finishes a question, and streams 3–4 punchy bullet-point answers into a teleprompter window positioned under your camera — without ever appearing in a screen share.
 
 Two **modes**:
