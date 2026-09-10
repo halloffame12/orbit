@@ -16,6 +16,33 @@ try {
 }
 
 const WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+const WDA_NONE = 0x00000000;
+
+function runPowershellAffinity(hwndValue: number, affinity: number): boolean {
+  try {
+    const { execSync } = require("child_process");
+    const script = `
+      Add-Type -TypeDefinition '
+        using System;
+        using System.Runtime.InteropServices;
+        public class WinAPI {
+          [DllImport("user32.dll")]
+          public static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+        }
+      '
+      $hwnd = [IntPtr]::new(${hwndValue})
+      [WinAPI]::SetWindowDisplayAffinity($hwnd, ${affinity})
+    `;
+    execSync(`powershell -Command "${script.replace(/"/g, '\\"')}"`, {
+      timeout: 3000,
+      stdio: "pipe",
+    });
+    return true;
+  } catch (e) {
+    console.error("[screen-hide] PowerShell affinity call failed:", e);
+    return false;
+  }
+}
 
 export function applyScreenHiding(win: BrowserWindow): boolean {
   const platform = process.platform;
@@ -45,32 +72,7 @@ function applyWindowsHiding(win: BrowserWindow): boolean {
   }
 
   // Direct FFI fallback using electron's built-in process
-  // This uses the Windows API directly via Node.js child_process
-  try {
-    const { execSync } = require("child_process");
-    const hwndVal = Number(hwnd.readBigUInt64LE(0));
-    const script = `
-      Add-Type -TypeDefinition '
-        using System;
-        using System.Runtime.InteropServices;
-        public class WinAPI {
-          [DllImport("user32.dll")]
-          public static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
-        }
-      '
-      $hwnd = [IntPtr]::new(${hwndVal})
-      [WinAPI]::SetWindowDisplayAffinity($hwnd, ${WDA_EXCLUDEFROMCAPTURE})
-    `;
-    execSync(`powershell -Command "${script.replace(/"/g, '\\"')}"`, {
-      timeout: 3000,
-      stdio: "pipe",
-    });
-    return true;
-  } catch (e) {
-    console.error("[screen-hide] PowerShell fallback failed:", e);
-  }
-
-  return false;
+  return runPowershellAffinity(Number(hwnd.readBigUInt64LE(0)), WDA_EXCLUDEFROMCAPTURE);
 }
 
 function applyMacOSHiding(win: BrowserWindow): boolean {
@@ -88,12 +90,10 @@ function applyMacOSHiding(win: BrowserWindow): boolean {
   }
 }
 
-export function removeScreenHiding(_win: BrowserWindow): void {
-  // On Windows, set affinity back to default
-  if (process.platform === "win32" && native) {
-    const hwnd = _win.getNativeWindowHandle();
-    if (hwnd.length >= 8) {
-      native.setExcludeFromCapture(Number(hwnd.readBigUInt64LE(0)));
-    }
-  }
+export function removeScreenHiding(win: BrowserWindow): void {
+  // Restore WDA_NONE (0x00000000) so the window is captured normally again.
+  if (process.platform !== "win32") return;
+  const hwnd = win.getNativeWindowHandle();
+  if (hwnd.length < 8) return;
+  runPowershellAffinity(Number(hwnd.readBigUInt64LE(0)), WDA_NONE);
 }

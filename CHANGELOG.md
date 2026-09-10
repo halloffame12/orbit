@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bottom-left) with a share-safe tip, so a full-screen share never covers
   content you are presenting — park the overlay over your own camera tile.
 
+### Fixed
+- `removeScreenHiding` previously re-applied `WDA_EXCLUDEFROMCAPTURE`
+  (0x11) instead of restoring `WDA_NONE` (0x00), and only worked with the
+  native addon. It now correctly resets affinity via the PowerShell path so
+  reveal-after-hide works on any machine.
+
 ## [1.0.0] - 2026-09-10
 
 ### Added
