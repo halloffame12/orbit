@@ -17,6 +17,77 @@ export interface TranscriptEvent {
   timestamp: number;
 }
 
+export interface AudioDiagnostic {
+  level: "ok" | "warn" | "error";
+  message: string;
+}
+
+export interface STTTestResult {
+  ok: boolean;
+  latencyMs: number;
+  error?: string;
+}
+
+/** Probe a whisper.cpp HTTP server's /health endpoint (it answers {"status":true}). */
+export async function checkWhisperHealth(url: string): Promise<STTTestResult> {
+  const base = (url || "http://localhost:9022").trim().replace(/\/+$/, "");
+  const t0 = Date.now();
+  try {
+    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(4000) });
+    const lat = Date.now() - t0;
+    if (!res.ok) {
+      return { ok: false, latencyMs: lat, error: `Server at ${base} answered /health with ${res.status}.` };
+    }
+    const json: any = await res.json().catch(() => null);
+    const ready = json?.status === true || json?.status === 1 || json?.ready === true || json == null;
+    return ready
+      ? { ok: true, latencyMs: lat }
+      : { ok: false, latencyMs: lat, error: `Server at ${base} answered with ${JSON.stringify(json)} — expected {"status":true}.` };
+  } catch {
+    return {
+      ok: false,
+      latencyMs: Date.now() - t0,
+      error: `No whisper.cpp server at ${base}${url === "http://localhost:9022" ? " (whisper.cpp default)" : ""}. Start one, e.g.:
+whisper-cli --server --port 9022 --model path/to/ggml-base.en.bin`,
+    };
+  }
+}
+
+/** Verifies whichever STT provider is configured, so Settings can show a live result. */
+export async function testSTTConfig(cfg: STTConfig): Promise<STTTestResult> {
+  if (cfg.provider === "deepgram") {
+    if (!cfg.apiKey) {
+      return { ok: false, latencyMs: 0, error: "No Deepgram API key set. Add it here or switch to Local (whisper.cpp)." };
+    }
+    const t0 = Date.now();
+    try {
+      const client = createClient(cfg.apiKey);
+      const live = client.listen.live({ model: cfg.model || "nova-2-general", interim_results: false, endpointing: 200 });
+      return await new Promise<STTTestResult>((resolve) => {
+        let done = false;
+        const finish = (r: STTTestResult) => {
+          if (done) return;
+          done = true;
+          try { live.finish(); } catch { /* best-effort */ }
+          resolve(r);
+        };
+        const timer = setTimeout(() => finish({ ok: false, latencyMs: Date.now() - t0, error: "Deepgram connection timed out." }), 8000);
+        live.on(LiveTranscriptionEvents.Open, () => {
+          clearTimeout(timer);
+          finish({ ok: true, latencyMs: Date.now() - t0 });
+        });
+        live.on(LiveTranscriptionEvents.Error, (e: any) => {
+          clearTimeout(timer);
+          finish({ ok: false, latencyMs: Date.now() - t0, error: e?.message ?? "Deepgram handshake failed." });
+        });
+      });
+    } catch (e: any) {
+      return { ok: false, latencyMs: Date.now() - t0, error: e?.message ?? "Deepgram SDK error." };
+    }
+  }
+  return checkWhisperHealth(cfg.whisperUrl || "http://localhost:9022");
+}
+
 interface VADResult {
   isSpeech: boolean;
   confidence: number;
@@ -221,10 +292,30 @@ export class STTService extends EventEmitter {
       });
     });
 
-    if (this.config.provider === "deepgram" && this.config.apiKey) {
+    if (this.config.provider === "deepgram") {
+      if (!this.config.apiKey) {
+        throw new Error(
+          "Deepgram is selected but no API key is set. Open Settings → Speech-to-text, add a Deepgram API key (or switch to Local)."
+        );
+      }
       await this.connectDeepgram();
+      this.emit("diagnostic", {
+        level: "ok",
+        message: `Deepgram streaming STT connected (${this.config.model}).`,
+      });
     } else {
-      console.log(`[stt] Local mode - will transcribe utterances via whisper.cpp at ${this.config.whisperUrl ?? "http://localhost:9022"}`);
+      const base = (this.config.whisperUrl || "http://localhost:9022").trim().replace(/\/+$/, "");
+      console.log(`[stt] Local mode - whisper.cpp server: ${base}`);
+      const health = await checkWhisperHealth(base);
+      if (health.ok) {
+        this.emit("diagnostic", { level: "ok", message: `whisper.cpp server reachable at ${base}.` });
+      } else {
+        this.emit("diagnostic", { level: "error", message: health.error! });
+        this.emit("diagnostic", {
+          level: "warn",
+          message: `Transcription is currently OFF — nothing will appear until a whisper.cpp server is running at ${base}.`,
+        });
+      }
     }
   }
 
@@ -259,23 +350,45 @@ export class STTService extends EventEmitter {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
+      const isOpenAiCompat = url.includes("/v1/audio/transcriptions");
 
-      const form = new FormData();
-      form.append("file", new Blob([wav], { type: "audio/wav" }), "utt.wav");
-      form.append("response_format", "json");
+      let text: string;
+      if (isOpenAiCompat) {
+        // OpenAI-compatible endpoint (whisper.cpp --openai or any server)
+        const form = new FormData();
+        form.append("file", new Blob([wav], { type: "audio/wav" }), "utt.wav");
+        form.append("response_format", "json");
+        const res = await fetch(`${url.replace(/\/+$/, "")}`, {
+          method: "POST",
+          body: form,
+          signal: controller.signal,
+        });
+        if (!res.ok) return "";
+        const json: any = await res.json();
+        text = json.text ?? json.transcription ?? "";
+      } else {
+        // whisper.cpp native protocol: JSON with base64 audio on /inference
+        const res = await fetch(`${url.replace(/\/+$/, "")}/inference`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audio: wav.toString("base64"),
+            response_format: "text",
+            temperature: 0,
+            language: "en",
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) return "";
+        const json: any = await res.json().catch(() => ({}));
+        if (typeof json?.text === "string") text = json.text;
+        else text = Array.isArray(json?.data) ? json.data.map((d: any) => d?.text ?? "").join(" ") : "";
+      }
 
-      const res = await fetch(`${url}/inference`, {
-        method: "POST",
-        body: form,
-        signal: controller.signal,
-      });
       clearTimeout(timer);
-
-      if (!res.ok) return "";
-      const json: any = await res.json();
-      return json.text ?? json.transcription ?? "";
+      return text?.trim() ?? "";
     } catch (err) {
-      console.warn("[stt] whisper.cpp transcription failed:", err);
+      console.warn("[stt] whisper transcription failed:", err);
       return "";
     }
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { OrbitAPI, AppConfig, InterviewMode, LLMConfig, ConnectionTest } from "@/lib/types";
+import { OrbitAPI, AppConfig, InterviewMode, LLMConfig, ConnectionTest, STTTestResult, AudioDiagnostic } from "@/lib/types";
 
 /**
  * Central hook wiring renderer state to the main process over IPC.
@@ -13,6 +13,7 @@ export function useCopilot() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
   const [audioStatus, setAudioStatus] = useState<string>("idle");
+  const [diagnostic, setDiagnostic] = useState<AudioDiagnostic | null>(null);
   const [clickthrough, setClickthrough] = useState(false);
   const [visible, setVisible] = useState(true);
   const [speaker, setSpeaker] = useState<"Interviewer" | "Me" | null>(null);
@@ -59,6 +60,8 @@ export function useCopilot() {
     api.onSpeakerChange((data) => setSpeaker(data.speaker));
 
     api.onAudioStatus((status) => setAudioStatus(status));
+
+    api.onAudioDiagnostic((msg) => setDiagnostic(msg));
 
     api.onSolveStatus((status) => {
       setSolveStatus(status);
@@ -155,6 +158,11 @@ export function useCopilot() {
     []
   );
 
+  const testSTT = useCallback(
+    async (draft: Partial<AppConfig["stt"]>): Promise<STTTestResult> => api.testSTT(draft),
+    []
+  );
+
   const quitApp = useCallback(() => {
     api.quit();
   }, []);
@@ -172,6 +180,7 @@ export function useCopilot() {
     isStreaming,
     lastQuestion,
     audioStatus,
+    diagnostic,
     clickthrough,
     visible,
     speaker,
@@ -190,6 +199,7 @@ export function useCopilot() {
     captureAndSolve,
     clearAll,
     testConnection,
+    testSTT,
     quitApp,
     setOverlayOpacity,
   };

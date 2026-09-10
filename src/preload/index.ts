@@ -14,6 +14,7 @@ export interface OrbitAPI {
   clearContext(): Promise<void>;
   captureAndSolve(): Promise<void>;
   testConnection(cfg: any): Promise<{ ok: boolean; latencyMs: number; error?: string }>;
+  testSTT(cfg: any): Promise<{ ok: boolean; latencyMs: number; error?: string }>;
   startAudio(): Promise<void>;
   stopAudio(): Promise<void>;
   getDevices(): Promise<any[]>;
@@ -24,6 +25,7 @@ export interface OrbitAPI {
   onLLMError(cb: (err: string) => void): void;
   onSpeakerChange(cb: (data: any) => void): void;
   onAudioStatus(cb: (status: string) => void): void;
+  onAudioDiagnostic(cb: (msg: { level: "ok" | "warn" | "error"; message: string }) => void): void;
   onSolveStatus(cb: (status: string) => void): void;
   onForceGenerate(cb: () => void): void;
   onToggleClickthrough(cb: () => void): void;
@@ -44,6 +46,7 @@ const api: OrbitAPI = {
   clearContext: () => ipcRenderer.invoke("ipc:clear-context"),
   captureAndSolve: () => ipcRenderer.invoke("ipc:capture-and-solve"),
   testConnection: (cfg) => ipcRenderer.invoke("ipc:test-connection", cfg),
+  testSTT: (cfg) => ipcRenderer.invoke("ipc:test-stt", cfg),
   startAudio: () => ipcRenderer.invoke("ipc:start-audio"),
   stopAudio: () => ipcRenderer.invoke("ipc:stop-audio"),
   getDevices: () => ipcRenderer.invoke("ipc:get-devices"),
@@ -65,6 +68,9 @@ const api: OrbitAPI = {
   },
   onAudioStatus: (cb) => {
     ipcRenderer.on("ipc:audio-status", (_e, status) => cb(status));
+  },
+  onAudioDiagnostic: (cb) => {
+    ipcRenderer.on("ipc:audio-diagnostic", (_e, msg) => cb(msg));
   },
   onSolveStatus: (cb) => {
     ipcRenderer.on("ipc:solve-status", (_e, status) => cb(status));

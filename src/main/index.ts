@@ -2,7 +2,7 @@ import { app, BrowserWindow, globalShortcut, ipcMain, screen, Tray, Menu, native
 import path from "path";
 import { applyScreenHiding } from "./native/screen-hide";
 import { AudioCaptureService } from "./services/audio-capture";
-import { STTService } from "./services/stt-service";
+import { STTService, testSTTConfig } from "./services/stt-service";
 import { LLMStreamingService, LLMConfig } from "./services/llm-service";
 import { ConfigManager, InterviewMode } from "./services/config-manager";
 import { CaptureService } from "./services/capture-service";
@@ -289,6 +289,10 @@ function setupIPC(): void {
     return llmService?.testConnection({ ...config.getLLMConfig(), ...draftCfg }) ?? { ok: false, latencyMs: 0, error: "LLM service not ready" };
   });
 
+  ipcMain.handle("ipc:test-stt", (_e, draftCfg) => {
+    return testSTTConfig({ ...config.getSTTConfig(), ...(draftCfg ?? {}) });
+  });
+
   ipcMain.handle("ipc:start-audio", async () => {
     await startAudioPipeline();
   });
@@ -304,6 +308,15 @@ function setupIPC(): void {
 
 /* ------------------------ audio pipeline --------------------------- */
 
+function sendDiagnostic(msg: { level: "ok" | "warn" | "error"; message: string }): void {
+  mainWindow?.webContents.send("ipc:audio-diagnostic", msg);
+  if (msg.level === "error") {
+    mainWindow?.webContents.send("ipc:audio-status", "degraded");
+  } else if (msg.level === "ok") {
+    mainWindow?.webContents.send("ipc:audio-status", "running");
+  }
+}
+
 async function startAudioPipeline(): Promise<void> {
   try {
     audioService = new AudioCaptureService();
@@ -312,6 +325,9 @@ async function startAudioPipeline(): Promise<void> {
     audioService.on("audio", (chunk) => {
       sttService?.sendAudio(chunk);
     });
+
+    audioService.on("diagnostic", sendDiagnostic);
+    sttService.on("diagnostic", sendDiagnostic);
 
     sttService.on("transcript", (data) => {
       mainWindow?.webContents.send("ipc:transcript", data);
@@ -332,11 +348,17 @@ async function startAudioPipeline(): Promise<void> {
     });
 
     await audioService.start();
-    await sttService.connect();
+    try {
+      await sttService.connect();
+    } catch (sttErr: any) {
+      console.error("[main] STT connect failed:", sttErr);
+      sendDiagnostic({ level: "error", message: sttErr?.message ?? String(sttErr) });
+    }
 
     mainWindow?.webContents.send("ipc:audio-status", "running");
   } catch (err: any) {
     console.error("[main] Audio pipeline error:", err);
+    sendDiagnostic({ level: "error", message: `Audio pipeline failed to start: ${err?.message ?? err}` });
     mainWindow?.webContents.send("ipc:audio-status", "error");
   }
 }

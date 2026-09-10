@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AppConfig, InterviewMode, LLMConfig, PROVIDER_META, ProviderId, ConnectionTest, OverlayPosition } from "@/lib/types";
+import { AppConfig, InterviewMode, LLMConfig, PROVIDER_META, ProviderId, ConnectionTest, OverlayPosition, STTTestResult, AudioDiagnostic } from "@/lib/types";
 
 interface Props {
   config: AppConfig;
@@ -7,13 +7,16 @@ interface Props {
   onSetMode: (mode: InterviewMode) => void;
   onClose: () => void;
   onTestConnection: (cfg: Partial<LLMConfig>) => Promise<ConnectionTest>;
+  onTestSTT: (cfg: Partial<AppConfig["stt"]>) => Promise<STTTestResult>;
+  audioStatus: string;
+  diagnostic: AudioDiagnostic | null;
 }
 
 const FIELD =
   "w-full bg-black/30 border border-white/10 rounded-md px-2.5 py-1.5 text-[12px] text-copilot-text font-mono outline-none focus:border-copilot-accent/60 transition-colors";
 const LABEL = "block text-[10px] uppercase tracking-widest text-copilot-muted mb-1";
 
-export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnection }: Props) {
+export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnection, onTestSTT, audioStatus, diagnostic }: Props) {
   const [mode, setModeLocal] = useState<InterviewMode>(config.mode);
   const [llm, setLlm] = useState<LLMConfig>({ ...config.llm });
   const [sttProvider, setSttProvider] = useState(config.stt.provider);
@@ -23,6 +26,7 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
   const [testing, setTesting] = useState<null | "running" | ConnectionTest>(null);
 
   const [placement, setPlacement] = useState<OverlayPosition>(config.overlay.position);
+  const [sttTesting, setSttTesting] = useState<null | "running" | STTTestResult>(null);
 
   useEffect(() => {
     setModeLocal(config.mode);
@@ -214,14 +218,65 @@ export function SettingsModal({ config, onSave, onSetMode, onClose, onTestConnec
                   <span className={LABEL}>Model</span>
                   <input className={FIELD} value={sttModel} onChange={(e) => setSttModel(e.target.value)} />
                 </div>
+                <div className="rounded-md border border-copilot-accent/20 bg-copilot-accent/5 px-3 py-2 text-[11px] leading-relaxed text-copilot-dim">
+                  Streaming transcription via the Deepgram API. Free tier covers
+                  a few hundred minutes — enough for mock interviews. Without a
+                  key here, <span className="text-copilot-text">no words will ever appear</span>.
+                </div>
               </>
             ) : (
-              <div>
-                <span className={LABEL}>whisper.cpp server</span>
-                <input className={FIELD} value={whisperUrl} onChange={(e) => setWhisperUrl(e.target.value)} />
-              </div>
+              <>
+                <div>
+                  <span className={LABEL}>whisper.cpp server</span>
+                  <input className={FIELD} value={whisperUrl} onChange={(e) => setWhisperUrl(e.target.value)} />
+                </div>
+                <div className="rounded-md border border-copilot-accent/20 bg-copilot-accent/5 px-3 py-2 text-[11px] leading-relaxed text-copilot-dim">
+                  Runs entirely on your machine — free and private. You must have
+                  a whisper.cpp HTTP server listening at the URL above. Start one:
+                  <div className="mt-1 font-mono text-[10px] text-copilot-text bg-black/40 border border-white/5 rounded px-2 py-1">
+                    whisper-cli --server --port 9022 --model ggml-base.en.bin
+                  </div>
+                  If no server is running here, <span className="text-copilot-text">nothing will be transcribed</span>.
+                </div>
+              </>
             )}
           </div>
+
+          <button
+            onClick={async () => {
+              setSttTesting("running");
+              const res = await onTestSTT({ provider: sttProvider, apiKey: sttKey, whisperUrl, model: sttModel });
+              setSttTesting(res);
+            }}
+            disabled={sttTesting === "running"}
+            className="mt-3 w-full rounded-md py-2 text-[12px] font-semibold border border-copilot-accent/50 text-copilot-accent hover:bg-copilot-accent/10 disabled:opacity-50 transition-colors"
+          >
+            {sttTesting === "running" ? "Checking…" : "Check speech-to-text"}
+          </button>
+          {sttTesting && sttTesting !== "running" && (
+            <div
+              className={`mt-2 whitespace-pre-wrap text-[11px] font-mono px-3 py-2 rounded-md border ${
+                sttTesting.ok
+                  ? "border-copilot-accent/40 text-copilot-accent"
+                  : "border-red-500/40 text-red-400"
+              }`}
+            >
+              {sttTesting.ok ? `✓ Connected in ${sttTesting.latencyMs}ms` : `✕ ${sttTesting.error ?? "Not reachable"}`}
+            </div>
+          )}
+          {diagnostic && (
+            <div
+              className={`mt-2 text-[11px] px-3 py-2 rounded-md border ${
+                diagnostic.level === "error"
+                  ? "border-red-500/40 text-red-400"
+                  : diagnostic.level === "warn"
+                    ? "border-amber-400/40 text-amber-300"
+                    : "border-copilot-accent/40 text-copilot-accent"
+              }`}
+            >
+              Live: {diagnostic.message}
+            </div>
+          )}
         </section>
         {/* Overlay placement */}
         <section>

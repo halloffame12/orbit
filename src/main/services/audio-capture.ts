@@ -7,6 +7,11 @@ export interface AudioDevice {
   type: "microphone" | "loopback";
 }
 
+export interface AudioDiagnostic {
+  level: "ok" | "warn" | "error";
+  message: string;
+}
+
 /**
  * AudioCaptureService captures two channels:
  * 1. Microphone input (candidate's voice → tagged as [Me])
@@ -65,8 +70,16 @@ export class AudioCaptureService extends EventEmitter {
         }
       });
 
-      this.micProcess.on("error", (err) => {
+      this.micProcess.on("error", (err: NodeJS.ErrnoException) => {
         console.error("[audio:mic] process error:", err);
+        if (err.code === "ENOENT") {
+          this.emit("diagnostic", {
+            level: "error",
+            message: "ffmpeg was not found on PATH — audio capture is impossible. Install it with: winget install Gyan.FFmpeg, then restart Orbit.",
+          });
+        } else {
+          this.emit("diagnostic", { level: "error", message: `Microphone capture failed: ${err.message}` });
+        }
         this.emit("error", { source: "mic", error: err });
       });
     }
@@ -100,10 +113,42 @@ export class AudioCaptureService extends EventEmitter {
         }
       });
 
-      this.loopbackProcess.on("error", (err) => {
+      this.loopbackProcess.on("error", (err: NodeJS.ErrnoException) => {
         console.error("[audio:loopback] process error:", err);
+        if (err.code === "ENOENT") {
+          this.emit("diagnostic", {
+            level: "error",
+            message: "ffmpeg was not found on PATH — audio capture is impossible. Install it with: winget install Gyan.FFmpeg, then restart Orbit.",
+          });
+        } else {
+          this.emit("diagnostic", { level: "error", message: `System-audio capture failed: ${err.message}` });
+        }
         this.emit("error", { source: "loopback", error: err });
       });
+    }
+
+    // Surface exactly which pieces are missing so the UI can explain itself.
+    if (!this.micProcess && !this.loopbackProcess) {
+      this.emit("diagnostic", {
+        level: "error",
+        message: "No audio devices were found — Orbit cannot hear the interview. Check your microphone and system-audio (loopback) setup, then restart the app.",
+      });
+    } else {
+      if (!this.micProcess) {
+        this.emit("diagnostic", {
+          level: "error",
+          message: "No microphone detected — Orbit cannot hear the interviewer's questions.",
+        });
+      }
+      if (!this.loopbackProcess) {
+        this.emit("diagnostic", {
+          level: "warn",
+          message: "No system-audio (loopback) device found. Install a virtual audio cable such as VB-CABLE (free) and set it as the default playback device to capture the interviewer's voice directly.",
+        });
+      }
+      if (this.micProcess && this.loopbackProcess) {
+        this.emit("diagnostic", { level: "ok", message: "Microphone + system-audio capture running (16 kHz, mono)." });
+      }
     }
   }
 

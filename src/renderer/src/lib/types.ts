@@ -79,6 +79,13 @@ export interface ConnectionTest {
   error?: string;
 }
 
+export type STTTestResult = ConnectionTest;
+
+export interface AudioDiagnostic {
+  level: "ok" | "warn" | "error";
+  message: string;
+}
+
 // Global bridge type — exposed via preload
 export interface OrbitAPI {
   getConfig(): Promise<AppConfig>;
@@ -93,6 +100,7 @@ export interface OrbitAPI {
   clearContext(): Promise<void>;
   captureAndSolve(): Promise<void>;
   testConnection(cfg: Partial<LLMConfig>): Promise<ConnectionTest>;
+  testSTT(cfg: Partial<AppConfig["stt"]>): Promise<STTTestResult>;
   startAudio(): Promise<void>;
   stopAudio(): Promise<void>;
   getDevices(): Promise<unknown[]>;
@@ -103,6 +111,7 @@ export interface OrbitAPI {
   onLLMError(cb: (err: string) => void): void;
   onSpeakerChange(cb: (data: SpeakerChange) => void): void;
   onAudioStatus(cb: (status: string) => void): void;
+  onAudioDiagnostic(cb: (msg: AudioDiagnostic) => void): void;
   onSolveStatus(cb: (status: string) => void): void;
   onForceGenerate(cb: () => void): void;
   onToggleClickthrough(cb: () => void): void;

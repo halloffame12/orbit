@@ -13,6 +13,7 @@ export default function App() {
     answer,
     isStreaming,
     audioStatus,
+    diagnostic,
     config,
     stats,
     lastError,
@@ -24,6 +25,7 @@ export default function App() {
     openSettings,
     closeSettings,
     testConnection,
+    testSTT,
     setOverlayOpacity,
     captureAndSolve,
     forceGenerate,
@@ -55,6 +57,9 @@ export default function App() {
           onSetMode={setInterviewMode}
           onClose={closeSettings}
           onTestConnection={testConnection}
+          onTestSTT={testSTT}
+          audioStatus={audioStatus}
+          diagnostic={diagnostic}
         />
       ) : (
         <>
@@ -146,6 +151,20 @@ export default function App() {
               <StatusDot status={audioStatus} />
               <span>{audioStatus}</span>
             </div>
+            {diagnostic && (
+              <span
+                className={`max-w-[210px] text-right leading-tight ${
+                  diagnostic.level === "error"
+                    ? "text-red-400"
+                    : diagnostic.level === "warn"
+                      ? "text-amber-300"
+                      : "text-copilot-accent"
+                }`}
+                title={diagnostic.message}
+              >
+                {diagnostic.message}
+              </span>
+            )}
             {stats.lastLatency > 0 && (
               <span>
                 {stats.lastLatency}ms · {stats.tokens} tok
@@ -178,7 +197,7 @@ export default function App() {
 
 function StatusDot({ status }: { status: string }) {
   const color =
-    status === "running" ? "#00E5A0" : status === "error" ? "#F87171" : "#6B7280";
+    status === "running" ? "#00E5A0" : status === "degraded" ? "#FBBF24" : status === "error" ? "#F87171" : "#6B7280";
   return (
     <span className="w-2 h-2 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
   );

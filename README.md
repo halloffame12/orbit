@@ -109,8 +109,8 @@ npm start
 
 | Component        | Requirement                                                              |
 |------------------|--------------------------------------------------------------------------|
-| `ffmpeg`         | On `PATH`. Captures mic (dshow) + loopback (dshow filter) → PCM 16 kHz.   |
-| STT              | Either a Deepgram API key (**Deepgram mode**) or a running whisper.cpp server (`--server`, default `http://localhost:9022`, **local mode**). |
+| `ffmpeg`         | On `PATH` (`winget install Gyan.FFmpeg`). Captures mic (dshow) + loopback → PCM 16 kHz. If missing, the HUD shows a red diagnostic instead of a silent "Listening". |
+| STT              | **Deepgram mode:** API key in Settings → Speech-to-text (streaming, simplest). **Local mode (default):** a running whisper.cpp HTTP server (`whisper-cli --server --port 9022 --model ggml-base.en.bin`), default `http://localhost:9022`. The app health-checks the server on launch and shows a live diagnostic — if nothing appears, use **Check speech-to-text** in Settings. |
 | LLM              | OpenAI, Gemini, Claude, or any OpenAI-compatible endpoint (defaults to Ollama `http://localhost:11434` model `llama3.1`, vision `llava`). Configured in the Settings modal — keys are encrypted with Windows `safeStorage`. |
 | Silero VAD (opt) | Drop `silero_vad.onnx` into `src/main/models/`. Falls back to RMS energy detection. |
 

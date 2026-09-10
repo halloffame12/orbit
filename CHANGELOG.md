@@ -20,6 +20,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native addon. It now correctly resets affinity via the PowerShell path so
   reveal-after-hide works on any machine.
 
+### Speech-to-text overhaul — no more silent "Listening"
+- The app now health-checks the configured STT provider on startup and shows
+  a live diagnostic in the HUD and Settings (green = ok, amber = degraded,
+  red = broken) instead of silently filtering out all transcription.
+- Deepgram mode without an API key now fails loudly with instructions instead
+  of silently falling back to a dead server.
+- whisper.cpp local mode is wired to the server's actual protocol (JSON
+  base64 on `/inference`, OpenAI-compatible multipart when the URL targets
+  `/v1/audio/transcriptions`) — previously the multipart payload it sent was
+  rejected, so even a running server produced empty transcripts.
+- New **"Check speech-to-text"** button in Settings tests the current
+  provider live (Deepgram handshake or whisper.cpp `/health`).
+- Audio capture now reports actionable errors when `ffmpeg` is missing, no
+  microphone is found, or no system-audio (loopback) device is installed.
+
 ## [1.0.0] - 2026-09-10
 
 ### Added
